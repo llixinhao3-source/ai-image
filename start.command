@@ -13,6 +13,13 @@ if [ ! -d "node_modules" ]; then
   echo ""
 fi
 
+if [ ! -f ".env" ]; then
+  echo "📝 未找到 .env，从 .env.example 复制..."
+  cp .env.example .env
+  echo "   请在 .env 中填入你的 GRS_API_KEY"
+  echo ""
+fi
+
 echo "🔧 启动后端代理服务器..."
 node server.mjs &
 SERVER_PID=$!

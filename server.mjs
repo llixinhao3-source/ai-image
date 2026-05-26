@@ -16,8 +16,7 @@ const TEMPLATES_DIR = path.join(OBSIDIAN_BASE, '10_Style_Templates')
 const IMAGES_DIR = path.join(OBSIDIAN_BASE, '20_Generated_Images')
 
 if (!API_KEY) {
-  console.error('❌ 未设置 GRS_API_KEY，请在 .env 文件中配置')
-  process.exit(1)
+  console.warn('⚠️  未设置 GRS_API_KEY，请复制 .env.example 为 .env 并填入你的 API Key')
 }
 
 app.use(cors())
@@ -240,7 +239,7 @@ app.get('/api/health', (_req, res) => {
 app.listen(PORT, () => {
   console.log(`\n🚀 AI Studio 代理服务器已启动`)
   console.log(`   地址: http://localhost:${PORT}`)
-  console.log(`   API Key: ${API_KEY.slice(0, 8)}...${API_KEY.slice(-4)}`)
+  console.log(`   API Key: ${API_KEY ? API_KEY.slice(0, 8) + '...' + API_KEY.slice(-4) : '未配置'}`)
   console.log(`   上游: ${BASE_URL}`)
   console.log(`   模板目录: ${TEMPLATES_DIR}`)
   console.log(`   图片目录: ${IMAGES_DIR}\n`)
