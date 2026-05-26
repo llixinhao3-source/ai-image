@@ -3,8 +3,18 @@ const GRS_BASE = 'https://grsai.dakka.com.cn'
 let proxyChecked = false
 let proxyAvailable = false
 
+const DEFAULT_KEY = import.meta.env.VITE_API_KEY ?? ''
+
 export function getStoredKey(): string { return localStorage.getItem('grs_api_key') ?? '' }
 export function setStoredKey(key: string) { localStorage.setItem('grs_api_key', key) }
+
+function getEffectiveKey(): string { return getStoredKey() || DEFAULT_KEY || '' }
+
+export function maskKey(key: string): string {
+  if (!key) return ''
+  if (key.length <= 12) return key.slice(0, 3) + 'x'.repeat(key.length - 3)
+  return key.slice(0, 3) + 'x'.repeat(8) + '...' + key.slice(-3)
+}
 
 export async function checkProxy(): Promise<boolean> {
   if (proxyChecked) return proxyAvailable
@@ -51,7 +61,7 @@ export async function callGenerateImage(params: GenParams): Promise<GenResult> {
     return res.json()
   }
 
-  const key = getStoredKey()
+  const key = getEffectiveKey()
   if (!key) return { id: '0', status: 'failed', error: '请先在左下角填入 API Key' }
 
   const res = await fetch(`${GRS_BASE}/v1/api/generate`, {
