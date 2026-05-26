@@ -1,36 +1,15 @@
 import type { StyleTemplate } from '@/types'
-import { PROXY_API } from '@/types'
+import { callTemplates } from '@/utils/apiService'
 
 export async function loadStyleTemplates(): Promise<StyleTemplate[]> {
   try {
-    const response = await fetch(`${PROXY_API}/api/templates`)
-    if (!response.ok) throw new Error('请求失败')
-    const templates: StyleTemplate[] = await response.json()
+    const templates: StyleTemplate[] = await callTemplates()
     if (templates.length > 0) return templates
     return getDemoTemplates()
   } catch (err) {
-    console.error('[fileService] 读取风格模板失败:', err)
+    console.error('[fileService] 读取风格模板失败，使用内置模板')
     return getDemoTemplates()
   }
-}
-
-export async function saveGeneratedImage(fileName: string, dataUrl: string): Promise<string> {
-  const response = await fetch(`${PROXY_API}/api/save-image`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fileName, dataUrl }),
-  })
-  if (!response.ok) throw new Error('保存图片失败')
-  return fileName
-}
-
-export async function saveStyleTemplateFile(fileName: string, mdContent: string): Promise<void> {
-  const response = await fetch(`${PROXY_API}/api/save-template`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fileName, content: mdContent }),
-  })
-  if (!response.ok) throw new Error('保存模板失败')
 }
 
 export function getDemoTemplates(): StyleTemplate[] {
@@ -47,12 +26,31 @@ export function getDemoTemplates(): StyleTemplate[] {
       negativePrompt: 'cluttered, messy, neon, dark, high contrast, oversaturated, deformed, low quality',
     },
     {
+      fileName: 'ebay.md',
+      styleName: 'eBay电商纯白商品图',
+      prompt: 'Professional commercial product photography, [replace with your product], centered composition, clean crisp white background (#FFFFFF), studio softbox lighting, sharp focus, high-end catalog quality, realistic textures, detailed materials, 1:1 aspect ratio',
+      baseModel: 'SDXL_Studio_Product_v2',
+      lora: [
+        { name: 'Commercial_Product_Studio_v1', weight: 0.8 },
+        { name: 'Perfect_White_Background', weight: 0.6 },
+      ],
+      negativePrompt: 'human, hands, shadows on background, gradient background, reflection, clutter, text, watermark, low quality, distorted, bad geometry',
+    },
+    {
       fileName: 'cinematic-light.md',
       styleName: '电影级光影',
-      prompt: 'cinematic lighting, volumetric rays, rim light, shallow depth of field, 8k resolution',
+      prompt: 'cinematic lighting, volumetric rays, rim light, shallow depth of field, 8k resolution, hyperrealistic',
       baseModel: 'SDXL',
       lora: 'cinematic_v2:0.8',
       negativePrompt: 'blurry, low quality, overexposed',
+    },
+    {
+      fileName: 'anime-portrait.md',
+      styleName: '二次元动漫风',
+      prompt: 'masterpiece, best quality, 1girl, detailed eyes, soft lighting, vibrant colors, anime style, trending on pixiv',
+      baseModel: 'SDXL_Anime_v3',
+      lora: 'anime_style_v2:0.7',
+      negativePrompt: 'lowres, bad anatomy, bad hands, missing fingers, extra digit',
     },
   ]
 }

@@ -1,4 +1,5 @@
-import { type ReactNode } from 'react'
+import { type ReactNode, useState, useEffect } from 'react'
+import { getStoredKey, setStoredKey } from '@/utils/apiService'
 
 interface LayoutProps {
   sidebar: ReactNode
@@ -8,6 +9,11 @@ interface LayoutProps {
 }
 
 export function Layout({ sidebar, children, theme, onToggleTheme }: LayoutProps) {
+  const [apiKey, setApiKey] = useState('')
+  const [showKey, setShowKey] = useState(false)
+
+  useEffect(() => { setApiKey(getStoredKey()) }, [])
+
   return (
     <div className={`flex h-screen w-screen overflow-hidden transition-colors duration-500 ${
       theme === 'dark' ? 'bg-surface-dark text-white' : 'bg-surface-light text-gray-900'
@@ -22,7 +28,28 @@ export function Layout({ sidebar, children, theme, onToggleTheme }: LayoutProps)
 
         <div className="flex-1">{sidebar}</div>
 
-        <div className="border-t pt-4 mt-auto">
+        <div className="border-t pt-4 mt-auto space-y-3">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-[9px] font-semibold uppercase tracking-widest text-gray-400">API Key</label>
+              <button onClick={() => setShowKey(!showKey)}
+                className="text-[9px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                {showKey ? '隐藏' : '显示'}
+              </button>
+            </div>
+            <div className="relative">
+              <input type={showKey ? 'text' : 'password'} value={apiKey}
+                onChange={e => { setApiKey(e.target.value); setStoredKey(e.target.value) }}
+                placeholder="sk-..."
+                className="w-full rounded-apple border border-gray-200/60 bg-white/50 py-1.5 pl-2.5 pr-8 text-[11px] font-mono text-gray-600 placeholder-gray-300 outline-none backdrop-blur-glass transition-all hover:border-gray-300/80 focus:border-blue-400/60 focus:ring-4 focus:ring-blue-500/5 dark:border-white/8 dark:bg-white/5 dark:text-gray-300 dark:placeholder-gray-600" />
+              {apiKey.length > 0 && (
+                <button onClick={() => { setApiKey(''); setStoredKey('') }}
+                  className="absolute right-2 top-1.5 text-xs text-gray-300 hover:text-gray-500 dark:hover:text-gray-400">✕</button>
+              )}
+            </div>
+            {!apiKey && <p className="text-[9px] text-gray-300 dark:text-gray-600">填入 Key 后可直接在线生图</p>}
+          </div>
+
           <button onClick={onToggleTheme}
             className={`flex w-full items-center gap-3 rounded-apple px-3 py-2 text-sm font-medium transition-all duration-300 ${
               theme === 'dark' ? 'text-gray-400 hover:bg-white/5 hover:text-gray-200' : 'text-gray-500 hover:bg-black/5 hover:text-gray-700'

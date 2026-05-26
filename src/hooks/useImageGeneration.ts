@@ -1,10 +1,7 @@
 import { useState, useCallback } from 'react'
-import type { GeneratedImage, GenerationParams, ImageModel, AspectRatioOption, ImageSize } from '@/types'
-import { saveGeneratedImage } from '@/utils/fileService'
+import type { GeneratedImage, GenerationParams, ImageModel, AspectRatioOption } from '@/types'
+import { callGenerateImage, callSaveImage } from '@/utils/apiService'
 import { executeKeepPipeline } from '@/utils/vlmPipeline'
-import { PROXY_API } from '@/types'
-
-const IMAGE_GEN_API = `${PROXY_API}/api/generate`
 
 const RATIO_TO_PIXEL: Record<string, string> = {
   '1:1': '1024x1024',
@@ -35,56 +32,6 @@ function getAspectRatioParam(model: ImageModel, ratio: AspectRatioOption): strin
   return ratio
 }
 
-function getAspectRatioSize(aspectRatio: string): { w: number; h: number } {
-  switch (aspectRatio) {
-    case '2:3': return { w: 512, h: 768 }
-    case '3:2': return { w: 768, h: 512 }
-    case '16:9': return { w: 854, h: 480 }
-    default: return { w: 512, h: 512 }
-  }
-}
-
-function generateDemoImage(id: number, prompt: string, aspectRatio: string): GeneratedImage {
-  const { w, h } = getAspectRatioSize(aspectRatio)
-  const hue = (id * 137.5) % 360
-  const sat = 55 + (id % 20)
-  const lit = 60 + (id % 15)
-
-  const canvas = document.createElement('canvas')
-  canvas.width = w
-  canvas.height = h
-  const ctx = canvas.getContext('2d')!
-
-  const g = ctx.createLinearGradient(0, 0, w, h)
-  g.addColorStop(0, `hsl(${hue}, ${sat}%, ${lit}%)`)
-  g.addColorStop(0.5, `hsl(${(hue + 40) % 360}, ${sat + 10}%, ${lit + 10}%)`)
-  g.addColorStop(1, `hsl(${(hue + 80) % 360}, ${sat}%, ${lit - 5}%)`)
-  ctx.fillStyle = g
-  ctx.fillRect(0, 0, w, h)
-
-  ctx.fillStyle = 'rgba(255,255,255,0.15)'
-  ctx.beginPath(); ctx.arc(w * 0.7, h * 0.3, w * 0.25, 0, Math.PI * 2); ctx.fill()
-  ctx.beginPath(); ctx.arc(w * 0.25, h * 0.65, w * 0.2, 0, Math.PI * 2); ctx.fill()
-
-  ctx.font = `400 ${Math.min(14, w / 35)}px "Inter", system-ui`
-  ctx.fillStyle = 'rgba(255,255,255,0.85)'
-  ctx.textAlign = 'center'
-  const words = prompt.split(' ')
-  for (let i = 0; i < Math.min(words.length, 6); i++) {
-    ctx.fillText(words[i], w / 2, h / 2 - 30 + i * 22)
-  }
-
-  return {
-    id: `gen_${Date.now()}_${id}`,
-    dataUrl: canvas.toDataURL('image/png'),
-    prompt,
-    params: { prompt, baseModel: 'SDXL', lora: 'demo', model: 'gpt-image-2', aspectRatio: aspectRatio as AspectRatioOption },
-    timestamp: Date.now(),
-    isKept: false,
-    aspectRatio: aspectRatio as AspectRatioOption,
-  }
-}
-
 async function urlToDataUrl(url: string): Promise<string> {
   const response = await fetch(url)
   const blob = await response.blob()
@@ -94,13 +41,6 @@ async function urlToDataUrl(url: string): Promise<string> {
     reader.onerror = reject
     reader.readAsDataURL(blob)
   })
-}
-
-interface ApiResponse {
-  id: string
-  status: string
-  results?: { url: string }[]
-  error?: string
 }
 
 export function useImageGeneration() {
@@ -116,27 +56,15 @@ export function useImageGeneration() {
     try {
       const aspectRatioValue = getAspectRatioParam(params.model, params.aspectRatio || '1:1')
 
-      const body: Record<string, unknown> = {
+      const data = await callGenerateImage({
         model: params.model,
         prompt: params.prompt,
         aspectRatio: aspectRatioValue,
-        replyType: 'json',
-      }
-      if (!GPT_IMAGE_MODELS.has(params.model) && params.imageSize) {
-        body.imageSize = params.imageSize
-      }
-      if (params.negativePrompt) body.negativePrompt = params.negativePrompt
-
-      const response = await fetch(IMAGE_GEN_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        imageSize: GPT_IMAGE_MODELS.has(params.model) ? undefined : params.imageSize,
       })
 
-      const data: ApiResponse = await response.json()
-
-      if (!response.ok || data.status === 'failed' || data.status === 'violation') {
-        setLastError(data.error || `请求失败 (${response.status})`)
+      if (data.status === 'failed' || data.status === 'violation') {
+        setLastError(data.error || '生成失败')
         return
       }
 
@@ -173,7 +101,7 @@ export function useImageGeneration() {
     const relativePath = `20_Generated_Images/${fileName}`
 
     try {
-      await saveGeneratedImage(fileName, image.dataUrl)
+      await callSaveImage(fileName, image.dataUrl)
       setImages(prev => prev.map(img => img.id === image.id ? { ...img, isKept: true } : img))
     } catch (err) {
       console.error('[keepImage] 保存图片失败:', err)

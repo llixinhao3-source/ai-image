@@ -1,5 +1,5 @@
 import type { LoRaItem } from '@/types'
-import { PROXY_API } from '@/types'
+import { callVlm, callSaveTemplate } from '@/utils/apiService'
 
 interface VLMPipelineInput {
   imageDataUrl: string
@@ -18,25 +18,13 @@ function formatTimestamp(): string {
 }
 
 async function reversePromptFromImage(imageDataUrl: string, originalPrompt: string): Promise<string> {
-  const response = await fetch(`${PROXY_API}/api/vlm/reverse-prompt`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image: imageDataUrl, originalPrompt }),
-  })
-
-  if (!response.ok) {
-    console.warn('[VLM] 反推失败，使用原始提示词')
-    return originalPrompt
-  }
-
-  const data = await response.json()
+  const data = await callVlm(imageDataUrl, originalPrompt)
   return data.reversePrompt || originalPrompt
 }
 
 export async function executeKeepPipeline(input: VLMPipelineInput): Promise<void> {
   const { imageDataUrl, generationPrompt, generationModel, generationLora, negativePrompt, styleName, imagePath } = input
 
-  const { saveStyleTemplateFile } = await import('./fileService')
   const { buildStyleMarkdown } = await import('./parseMarkdown')
 
   try {
@@ -54,7 +42,7 @@ export async function executeKeepPipeline(input: VLMPipelineInput): Promise<void
       negativePrompt,
     })
 
-    await saveStyleTemplateFile(templateFileName, mdContent)
+    await callSaveTemplate(templateFileName, mdContent)
     console.log('[Pipeline] 模板已保存:', templateFileName)
   } catch (err) {
     console.error('[Pipeline] 执行失败:', err)
