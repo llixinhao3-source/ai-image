@@ -30,6 +30,8 @@ export interface GenerationParams {
   aspectRatio?: AspectRatioOption
   model: ImageModel
   imageSize?: ImageSize
+  userPrompt?: string
+  stylePrompt?: string
 }
 
 export interface GeneratedImage {

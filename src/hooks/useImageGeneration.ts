@@ -105,6 +105,8 @@ export function useImageGeneration() {
       setImages(prev => prev.map(img => img.id === image.id ? { ...img, isKept: true } : img))
     } catch (err) {
       console.error('[keepImage] 保存图片失败:', err)
+      alert('图片保存失败，请确认后端服务已启动（运行 start.command）')
+      return
     }
 
     executeKeepPipeline({
@@ -115,6 +117,8 @@ export function useImageGeneration() {
       negativePrompt: image.params.negativePrompt,
       styleName,
       imagePath: relativePath,
+      userPrompt: image.params.userPrompt,
+      stylePrompt: image.params.stylePrompt,
     }).catch(err => console.error('[keepImage] VLM Pipeline 失败:', err))
   }, [])
 

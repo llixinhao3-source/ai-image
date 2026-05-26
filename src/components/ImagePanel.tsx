@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { GeneratedImage } from '@/types'
 
 interface ImagePanelProps {
   images: GeneratedImage[]
   isGenerating: boolean
   onKeep: (image: GeneratedImage, styleName: string) => void
+  defaultStyleName: string
 }
 
 function getAspectRatioClass(aspectRatio?: string): string {
@@ -16,9 +17,13 @@ function getAspectRatioClass(aspectRatio?: string): string {
   }
 }
 
-export function ImagePanel({ images, isGenerating, onKeep }: ImagePanelProps) {
+export function ImagePanel({ images, isGenerating, onKeep, defaultStyleName }: ImagePanelProps) {
   const [styleNameInput, setStyleNameInput] = useState('')
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (defaultStyleName) setStyleNameInput(defaultStyleName)
+  }, [defaultStyleName, confirmingId])
 
   if (!isGenerating && images.length === 0) {
     return (
@@ -81,7 +86,7 @@ export function ImagePanel({ images, isGenerating, onKeep }: ImagePanelProps) {
                 className="flex-1 rounded-apple bg-gray-100 py-2.5 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-200 dark:bg-white/5 dark:text-gray-400 dark:hover:bg-white/10">取消</button>
               <button onClick={() => {
                 const img = images.find(i => i.id === confirmingId)
-                if (img && styleNameInput.trim()) { onKeep(img, styleNameInput.trim()); setStyleNameInput(''); setConfirmingId(null) }
+                if (img && styleNameInput.trim()) { onKeep(img, styleNameInput.trim()); setConfirmingId(null) }
               }} disabled={!styleNameInput.trim()}
                 className={`flex-1 rounded-apple py-2.5 text-sm font-semibold transition-all ${
                   styleNameInput.trim()

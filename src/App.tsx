@@ -40,10 +40,14 @@ export default function App() {
       model,
       aspectRatio,
       imageSize,
+      userPrompt: basePrompt,
+      stylePrompt: injected?.prompt,
     })
   }, [prompt, negativePrompt, model, aspectRatio, imageSize, injected, generate])
 
   const toggleTheme = useCallback(() => { setTheme(prev => prev === 'light' ? 'dark' : 'light') }, [])
+
+  const selectedTemplate = selectedId ? templates.find(t => t.fileName === selectedId) : null
 
   const sidebar = (
     <div className="space-y-8">
@@ -96,7 +100,7 @@ export default function App() {
               <p className="text-xs font-medium text-red-600 dark:text-red-400">{lastError}</p>
             </div>
           )}
-          {isGenerating ? <div className="p-8"><LoadingSkeleton /></div> : <ImagePanel images={images} isGenerating={isGenerating} onKeep={keepImage} />}
+          {isGenerating ? <div className="p-8"><LoadingSkeleton /></div> : <ImagePanel images={images} isGenerating={isGenerating} onKeep={keepImage} defaultStyleName={selectedTemplate?.styleName ?? ''} />}
         </div>
       </div>
     </Layout>
